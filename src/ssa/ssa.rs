@@ -3,11 +3,11 @@ use edged::graph::matrix::Graph;
 use edged::graph::traits::Directed;
 
 use super::basic_block::Terminator;
+use super::instruction::{Instruction, Value};
 use super::module::Module;
-use std::collections::HashSet;
-use std::iter::FromIterator;
+use std::collections::{HashMap, HashSet};
 
-fn convert_ssa_to_graph(module: &Module) {
+fn get_dom_fronts(module: &Module) -> Vec<Vec<usize>> {
     let mut edges = Vec::new();
     for (block_id, block) in module.blocks.iter().enumerate() {
         match block.terminator {
@@ -23,33 +23,45 @@ fn convert_ssa_to_graph(module: &Module) {
     }
 
     let graph: Graph<(), Directed> = edges.into_iter().collect();
-    let fronts = frontiers(&graph, 0);
+    frontiers(&graph, 0)
 }
-
 
 /// A basic block in the SSA form.
 /// Algorithm 3.1 from SSA book
-fn insert_params(dom_fronts: Vec<Vec<usize>>) {
-
-    // set of basic blocks where phi is added
-    let mut f = HashSet::<usize>::new();
-    // set of basic blocks that contain definitions of `variable`
-    let mut w = Vec::<usize>::new();
-
-    for variable in variables {
-
-        for block in blocks {
-            if "block contains assignment to variable" {
-                w.push(block);
-                break // break since we only need to find one block
-            }
-        }
-
-        while let Some(block) = w.pop() {
-            for child in dom_fronts[block] {
-                // blah
+/// Accepts a program that hasn't been converted to SSA form.
+pub fn insert_phi_nodes(module: &mut Module) {
+    // for each value, a list of basic blocks that assign to it
+    let mut definitions: HashMap<Value, Vec<usize>> = HashMap::new();
+    for (i, block) in module.blocks.iter().enumerate() {
+        for inst in block.instructions.iter() {
+            match inst {
+                Instruction::Compute(_, dest, _, _) => {
+                    definitions.entry(*dest).or_insert_with(Vec::new).push(i);
+                }
+                _ => {}
             }
         }
     }
+    let dom_fronts = get_dom_fronts(module);
 
+    // set of basic blocks where phi is added
+    let mut f = HashSet::<usize>::new();
+
+    for (variable, defs) in definitions {
+        // set of basic blocks that contain definitions of `variable`
+        let mut w = defs.clone();
+        // remove a basic block `block` from `w`
+        while let Some(x) = w.pop() {
+            for &y in &dom_fronts[x] {
+                if !f.contains(&y) {
+                    module.blocks[y].params.push(variable);
+                    f.insert(y);
+                    w.push(y);
+                    if !defs.contains(&y) {
+                        w.push(y);
+                    }
+                }
+            }
+        }
+    }
 }
