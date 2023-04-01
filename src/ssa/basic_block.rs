@@ -39,9 +39,9 @@ impl std::fmt::Display for Terminator {
         match self {
             Terminator::NoTerminator => write!(f, "noterm"),
             Terminator::ReturnVoid => write!(f, "ret void"),
-            Terminator::Return(v) => write!(f, "ret {}", v),
-            Terminator::Jump(b) => write!(f, "jump {}", b),
-            Terminator::Branch(c, t, e) => write!(f, "branch {}, {}, {}", c, t, e),
+            Terminator::Return(v) => write!(f, "ret {v}"),
+            Terminator::Jump(b) => write!(f, "jump {b}"),
+            Terminator::Branch(c, t, e) => write!(f, "branch {c}, {t}, {e}"),
         }
     }
 }
@@ -52,10 +52,31 @@ pub struct BasicBlock {
     pub terminator: Terminator,
 }
 
-impl BasicBlock {}
+impl BasicBlock {
+    pub fn new(params: Vec<Value>, instructions: Vec<Instruction>, terminator: Terminator) -> Self {
+        Self {
+            params,
+            instructions,
+            terminator,
+        }
+    }
+}
 
 impl std::fmt::Display for BasicBlock {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.params.is_empty() {
+            writeln!(f, ":")?;
+        } else {
+            writeln!(
+                f,
+                "({}):",
+                self.params
+                    .iter()
+                    .map(|v| v.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )?;
+        }
         for instruction in self.instructions.iter() {
             writeln!(f, "    {}", instruction)?;
         }

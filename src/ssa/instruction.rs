@@ -7,11 +7,13 @@ impl std::fmt::Display for Value {
     }
 }
 
-/// Three address code instruction
+/// Operations that instructions can perform.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Operation {
+pub enum BinaryOp {
     /// Addition
     Add,
+    // Bitwise AND
+    And,
     Eq,
     /// Less-than comparison
     Lt,
@@ -19,9 +21,13 @@ pub enum Operation {
     Le,
 }
 
+/// An instruction that exists in a basic block.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Instruction {
-    Compute(Operation, Value, Value, Value),
+    /// Computes a binary operation (v1 = v2 op v3)
+    BinOp(BinaryOp, Value, Value, Value),
+    /// Moves one value to another
+    Move(Value, Value),
     /// Loads an integer constant
     Int(Value, i32),
 }
@@ -30,10 +36,10 @@ impl std::fmt::Display for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Instruction::Int(dest, value) => write!(f, "{dest} = {value}"),
-            Instruction::Compute(op, dest, lhs, rhs) => {
+            Instruction::BinOp(op, dest, lhs, rhs) => {
                 write!(f, "{dest} = {op:?} {lhs}, {rhs}")
             }
-            _ => panic!("Not implemented: {self:#?}"),
+            Instruction::Move(dest, src) => write!(f, "{dest} = {src}"),
         }
     }
 }
