@@ -1,10 +1,10 @@
-use edged::dominance::frontiers;
-use edged::graph::matrix::Graph;
-use edged::graph::traits::Directed;
-
+//! Algorithms for converting a module to SSA form.
 use super::basic_block::Terminator;
 use super::instruction::{Instruction, Value};
 use super::module::Module;
+use edged::dominance::frontiers;
+use edged::graph::matrix::Graph;
+use edged::graph::traits::Directed;
 use std::collections::{HashMap, HashSet};
 
 /// Computes the dominance frontiers of a module.
@@ -19,7 +19,7 @@ fn get_dom_fronts(module: &Module) -> Vec<Vec<usize>> {
                 edges.push((block_id, yes.0));
                 edges.push((block_id, no.0));
             }
-            _ => {}
+            Terminator::None | Terminator::ReturnVoid | Terminator::Return(_) => {}
         }
     }
 
@@ -34,12 +34,12 @@ pub fn insert_phi_nodes(module: &mut Module) {
     // for each value, a list of basic blocks that assign to it
     let mut definitions: HashMap<Value, Vec<usize>> = HashMap::new();
     for (i, block) in module.blocks.iter().enumerate() {
-        for inst in block.instructions.iter() {
-            match inst {
+        for inst in &block.instructions {
+            match *inst {
                 Instruction::BinOp(_, dest, _, _) | Instruction::Move(dest, _) => {
-                    definitions.entry(*dest).or_insert_with(Vec::new).push(i);
+                    definitions.entry(dest).or_insert_with(Vec::new).push(i);
                 }
-                _ => {}
+                Instruction::Int(_, _) => {}
             }
         }
     }
@@ -70,7 +70,7 @@ pub fn insert_phi_nodes(module: &mut Module) {
 #[cfg(test)]
 mod tests {
     use crate::ssa::{
-        basic_block::{BasicBlock, BasicBlockId, Terminator},
+        basic_block::{BasicBlock, BlockId, Terminator},
         builder::ModuleBuilder,
         instruction::{BinaryOp, Instruction, Value},
         module::Module,
@@ -81,7 +81,7 @@ mod tests {
     #[test]
     fn test() {
         // program from fig 3.1 of ssa book
-        let mut builder = ModuleBuilder::new();
+        let mut builder = ModuleBuilder::default();
         // basic block definition
         let entry = builder.push_bb();
         let block_a = builder.push_bb();

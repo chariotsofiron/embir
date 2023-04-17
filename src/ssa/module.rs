@@ -1,23 +1,18 @@
+//! A collection of basic blocks.
 use super::basic_block::BasicBlock;
 
 /// A collection of basic blocks.
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Module {
     /// The basic blocks in the module. Assumes that the first block is the entry block.
     pub(crate) blocks: Vec<BasicBlock>,
 }
 
-impl Default for Module {
-    fn default() -> Self {
-        Self { blocks: Vec::new() }
-    }
-}
-
-impl std::fmt::Display for Module {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Module {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         for (i, block) in self.blocks.iter().enumerate() {
-            write!(f, "${}", i)?;
-            writeln!(f, "{}", block)?;
+            write!(f, "${i}")?;
+            writeln!(f, "{block}")?;
         }
         Ok(())
     }
