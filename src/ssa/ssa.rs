@@ -71,6 +71,7 @@ pub fn insert_phi_nodes(module: &mut Module) {
 mod tests {
     use crate::ssa::{
         basic_block::{BasicBlock, BasicBlockId, Terminator},
+        builder::ModuleBuilder,
         instruction::{BinaryOp, Instruction, Value},
         module::Module,
     };
@@ -80,58 +81,48 @@ mod tests {
     #[test]
     fn test() {
         // program from fig 3.1 of ssa book
-        let mut module = Module::default();
-        // entry
-        module.blocks.push(BasicBlock {
-            params: vec![],
-            instructions: vec![],
-            terminator: Terminator::Jump(BasicBlockId(1)),
-        });
+        let mut builder = ModuleBuilder::new();
+        // basic block definition
+        let entry = builder.push_bb();
+        let block_a = builder.push_bb();
+        let block_b = builder.push_bb();
+        let block_c = builder.push_bb();
+        let block_d = builder.push_bb();
+        let block_e = builder.push_bb();
 
-        // block A
-        module.blocks.push(BasicBlock {
-            params: vec![],
-            instructions: vec![],
-            terminator: Terminator::Branch(Value(2), BasicBlockId(2), BasicBlockId(3)),
-        });
+        builder.switch_to_block(entry);
+        builder.set_terminator(Terminator::Jump(block_a));
 
         // block B
-        module.blocks.push(BasicBlock {
-            params: vec![],
-            instructions: vec![
-                Instruction::Int(Value(0), 0), // x = 0
-                Instruction::Int(Value(1), 0), // y = 0
-            ],
-            terminator: Terminator::Jump(BasicBlockId(4)),
-        });
+        builder.switch_to_block(block_b);
+        let x = builder.push_variable();
+        let y = builder.push_variable();
+        builder.load_int(x, 0);
+        builder.load_int(y, 0);
+        builder.set_terminator(Terminator::Jump(block_d));
 
         // block C
-        module.blocks.push(BasicBlock {
-            params: vec![],
-            instructions: vec![
-                Instruction::Move(Value(2), Value(0)), // tmp = x
-                Instruction::Move(Value(0), Value(1)), // x = y
-                Instruction::Move(Value(1), Value(2)), // y = tmp
-            ],
-            terminator: Terminator::Branch(Value(0), BasicBlockId(4), BasicBlockId(5)),
-        });
+        builder.switch_to_block(block_c);
+        let tmp = builder.push_variable();
+        builder.build_move(x, tmp);
+        builder.build_move(y, x);
+        builder.build_move(tmp, y);
+        builder.set_terminator(Terminator::Branch(x, block_d, block_e));
 
         // block D
-        module.blocks.push(BasicBlock {
-            params: vec![],
-            instructions: vec![
-                Instruction::BinOp(BinaryOp::Add, Value(0), Value(0), Value(1)), // x = x + y
-            ],
-            terminator: Terminator::Branch(Value(0), BasicBlockId(1), BasicBlockId(5)),
-        });
+        builder.switch_to_block(block_d);
+        builder.build_binop(x, x, y, BinaryOp::Add);
+        builder.set_terminator(Terminator::Branch(x, block_a, block_e));
 
         // block E
-        module.blocks.push(BasicBlock {
-            params: vec![],
-            instructions: vec![],
-            terminator: Terminator::Return(Value(0)),
-        });
+        builder.switch_to_block(block_e);
+        builder.set_terminator(Terminator::Return(x));
 
+        // block A
+        builder.switch_to_block(block_a);
+        builder.set_terminator(Terminator::Branch(tmp, block_b, block_c));
+
+        let mut module = builder.build_module();
         insert_phi_nodes(&mut module);
         println!("{}", module);
     }

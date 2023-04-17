@@ -3,7 +3,7 @@ use crate::ssa::instruction::{Instruction, Value};
 /// [`BasicBlockId`] represents a reference to a basic block in an IR function. See
 /// [`ModuleBuilder::push_block`] for details on what a basic block is.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub struct BasicBlockId(pub usize);
+pub struct BasicBlockId(pub(crate) usize);
 
 impl std::fmt::Display for BasicBlockId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -46,10 +46,11 @@ impl std::fmt::Display for Terminator {
     }
 }
 
+#[derive(Clone)]
 pub struct BasicBlock {
-    pub params: Vec<Value>,
-    pub instructions: Vec<Instruction>,
-    pub terminator: Terminator,
+    pub(crate) params: Vec<Value>,
+    pub(crate) instructions: Vec<Instruction>,
+    pub(crate) terminator: Terminator,
 }
 
 impl BasicBlock {

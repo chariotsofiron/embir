@@ -1,9 +1,10 @@
 use super::basic_block::BasicBlock;
 
 /// A collection of basic blocks.
+#[derive(Clone)]
 pub struct Module {
     /// The basic blocks in the module. Assumes that the first block is the entry block.
-    pub blocks: Vec<BasicBlock>,
+    pub(crate) blocks: Vec<BasicBlock>,
 }
 
 impl Default for Module {
