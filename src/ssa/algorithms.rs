@@ -1,29 +1,15 @@
 //! Algorithms for converting a module to SSA form.
-use super::basic_block::Terminator;
 use super::instruction::{Instruction, Value};
 use super::module::Module;
-use edged::dominance::frontiers;
+use edged::dominance::{frontiers, immediate_dominators};
 use edged::graph::matrix::Graph;
 use edged::graph::traits::Directed;
+use edged::traversal::preorder::PreOrder;
 use std::collections::{HashMap, HashSet};
 
 /// Computes the dominance frontiers of a module.
 fn get_dom_fronts(module: &Module) -> Vec<Vec<usize>> {
-    let mut edges = Vec::new();
-    for (block_id, block) in module.blocks.iter().enumerate() {
-        match block.terminator {
-            Terminator::Jump(target) => {
-                edges.push((block_id, target.0));
-            }
-            Terminator::Branch(_, yes, no) => {
-                edges.push((block_id, yes.0));
-                edges.push((block_id, no.0));
-            }
-            Terminator::None | Terminator::ReturnVoid | Terminator::Return(_) => {}
-        }
-    }
-
-    let graph: Graph<(), Directed> = edges.into_iter().collect();
+    let graph = Graph::from(module);
     frontiers(&graph, 0)
 }
 
@@ -44,10 +30,8 @@ pub fn insert_phi_nodes(module: &mut Module) {
         }
     }
     let dom_fronts = get_dom_fronts(module);
-
     // set of basic blocks where phi is added
     let mut f = HashSet::<usize>::new();
-
     for (variable, defs) in definitions {
         // set of basic blocks that contain definitions of `variable`
         let mut w = defs.clone();
@@ -62,6 +46,40 @@ pub fn insert_phi_nodes(module: &mut Module) {
                         w.push(y);
                     }
                 }
+            }
+        }
+    }
+}
+
+pub fn global_value_numbering(module: &mut Module) {
+    let mut mapping: HashMap<Value, Value> = HashMap::new();
+    let mut reaching_defs: HashMap<Value, Value> = HashMap::new();
+
+    let dom_tree = Graph::<(), Directed>::from_iter(
+        immediate_dominators(&Graph::<(), Directed>::from(&*module), 0)
+            .iter()
+            .enumerate()
+            .filter_map(|(i, &parent)| parent.map(|parent| (parent, i))),
+    );
+
+    for block_id in PreOrder::new(&dom_tree, 0) {
+        let block = &mut module.blocks[block_id];
+        for inst in &mut block.instructions {
+            match inst {
+                Instruction::BinOp(_, dest, arg1, arg2) => {
+                    let new_value = Value(mapping.len() + 1);
+                    mapping.insert(*dest, new_value);
+                    *dest = new_value;
+                    *arg1 = mapping.get(arg1).unwrap_or(arg1).clone();
+                    *arg2 = mapping.get(arg2).unwrap_or(arg2).clone();
+                }
+                Instruction::Move(dest, arg) => {
+                    let new_value = Value(mapping.len() + 1);
+                    mapping.insert(*dest, new_value);
+                    *dest = new_value;
+                    *arg = mapping.get(arg).unwrap_or(arg).clone();
+                }
+                Instruction::Int(_, _) => {}
             }
         }
     }
