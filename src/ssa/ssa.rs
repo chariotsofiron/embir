@@ -71,8 +71,9 @@ pub fn insert_phi_nodes(module: &mut Module) {
 mod tests {
     use crate::ssa::{
         basic_block::{BasicBlock, BasicBlockId, Terminator},
+        builder::ModuleBuilder,
         instruction::{BinaryOp, Instruction, Value},
-        module::Module, builder::ModuleBuilder,
+        module::Module,
     };
 
     use super::insert_phi_nodes;
