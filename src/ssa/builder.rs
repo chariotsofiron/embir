@@ -1,7 +1,7 @@
 use super::{
     basic_block::{BasicBlock, BasicBlockId, Terminator},
     instruction::{BinaryOp, Instruction, Value},
-    module::Module,
+    module::Module, ssa::insert_phi_nodes,
 };
 
 // [`ModuleBuilder`] represents the struct used for building a module
@@ -20,10 +20,18 @@ impl ModuleBuilder {
         }
     }
 
-    pub fn build_module(&self) -> Module {
-        self.module.clone()
+    // Applies the SSA algorithms and returns the module.
+    // NOTE: This function invalidates any further usage of the ModuleBuilder
+    // struct, and is only meant to be used when youre done generating SSA.
+    pub fn build_module(self) -> Module {
+        /* SSA ALGOS GO HERE */
+        let mut module = self.module;
+        insert_phi_nodes(&mut module);
+        module
     }
 
+    // Pushes a new basic block, with by default a `noterm` as the terminator,
+    // and returns a BasicBlockId
     pub fn push_bb(&mut self) -> BasicBlockId {
         self.module.blocks.push(BasicBlock::new(
             Vec::new(),
@@ -45,12 +53,14 @@ impl ModuleBuilder {
         }
     }
 
+    // creates a new Value and returns it
     pub fn push_variable(&mut self) -> Value {
         let val = Value(self.val_counter);
         self.val_counter += 1;
         val
     }
 
+    // Pushes an Int instruction to the currently selected BasicBlock
     pub fn load_int(&mut self, var: Value, int: i32) {
         if let Some(id) = self.current_block {
             self.module.blocks[id.0]
@@ -61,6 +71,7 @@ impl ModuleBuilder {
         }
     }
 
+    // Pushes a move instruction to the currently selected BasicBlock
     pub fn build_move(&mut self, from: Value, to: Value) {
         if let Some(id) = self.current_block {
             self.module.blocks[id.0]
@@ -71,6 +82,7 @@ impl ModuleBuilder {
         }
     }
 
+    // Pushes a BinOp instruction to the currently selected BasicBlock
     pub fn build_binop(&mut self, to: Value, lhs: Value, rhs: Value, operation: BinaryOp) {
         if let Some(id) = self.current_block {
             self.module.blocks[id.0]

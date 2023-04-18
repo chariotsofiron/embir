@@ -70,13 +70,10 @@ pub fn insert_phi_nodes(module: &mut Module) {
 #[cfg(test)]
 mod tests {
     use crate::ssa::{
-        basic_block::{BasicBlock, BasicBlockId, Terminator},
+        basic_block::Terminator,
         builder::ModuleBuilder,
-        instruction::{BinaryOp, Instruction, Value},
-        module::Module,
+        instruction::BinaryOp,
     };
-
-    use super::insert_phi_nodes;
 
     #[test]
     fn test() {
@@ -122,8 +119,7 @@ mod tests {
         builder.switch_to_block(block_a);
         builder.set_terminator(Terminator::Branch(tmp, block_b, block_c));
 
-        let mut module = builder.build_module();
-        insert_phi_nodes(&mut module);
+        let module = builder.build_module(); // calls insert_phi_nodes
         println!("{}", module);
     }
 }
