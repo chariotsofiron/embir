@@ -1,9 +1,10 @@
 //! Module builder.
 
 use super::{
+    algorithms::insert_phi_nodes,
     basic_block::{BasicBlock, BlockId, Terminator},
     instruction::{BinaryOp, Instruction, Value},
-    module::Module, algorithms::insert_phi_nodes,
+    module::Module,
 };
 
 /// [`ModuleBuilder`] represents the struct used for building a module
@@ -35,7 +36,6 @@ impl ModuleBuilder {
             .blocks
             .push(BasicBlock::new(Vec::new(), Vec::new(), Terminator::None));
         BlockId(self.module.blocks.len() - 1)
-
     }
 
     /// Sets the current block to the given block.
