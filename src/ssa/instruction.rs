@@ -1,19 +1,23 @@
+//! Instructions that exist in a basic block.
+
+/// A reference to a value in an IR function.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Value(pub(crate) usize);
 
-impl std::fmt::Display for Value {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl core::fmt::Display for Value {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         write!(f, "v{}", self.0)
     }
 }
 
 /// Operations that instructions can perform.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum BinaryOp {
     /// Addition
     Add,
-    // Bitwise AND
+    /// Bitwise AND
     And,
+    /// Equality comparison
     Eq,
     /// Less-than comparison
     Lt,
@@ -32,14 +36,14 @@ pub enum Instruction {
     Int(Value, i32),
 }
 
-impl std::fmt::Display for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Instruction::Int(dest, value) => write!(f, "{dest} = {value}"),
-            Instruction::BinOp(op, dest, lhs, rhs) => {
+impl core::fmt::Display for Instruction {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        match *self {
+            Self::Int(dest, value) => write!(f, "{dest} = {value}"),
+            Self::BinOp(op, dest, lhs, rhs) => {
                 write!(f, "{dest} = {op:?} {lhs}, {rhs}")
             }
-            Instruction::Move(dest, src) => write!(f, "{dest} = {src}"),
+            Self::Move(dest, src) => write!(f, "{dest} = {src}"),
         }
     }
 }
