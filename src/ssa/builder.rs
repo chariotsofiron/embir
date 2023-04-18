@@ -1,6 +1,7 @@
 //! Module builder.
 
 use super::{
+    algorithms::insert_phi_nodes,
     basic_block::{BasicBlock, BlockId, Terminator},
     instruction::{BinaryOp, Instruction, Value},
     module::Module,
@@ -18,10 +19,15 @@ pub struct ModuleBuilder {
 }
 
 impl ModuleBuilder {
-    /// Returns the module.
     #[must_use]
-    pub fn build_module(&self) -> Module {
-        self.module.clone()
+    // Applies the SSA algorithms and returns the module.
+    // NOTE: This function invalidates any further usage of the ModuleBuilder
+    // struct, and is only meant to be used when youre done generating SSA.
+    pub fn build_module(self) -> Module {
+        /* SSA ALGOS GO HERE */
+        let mut module = self.module;
+        insert_phi_nodes(&mut module);
+        module
     }
 
     /// Pushes a new basic block to the module and returns the reference to it.
